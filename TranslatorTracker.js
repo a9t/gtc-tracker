@@ -22,7 +22,7 @@ function _getExcludedTranslators() {
   return arrayStringIds.map(function (stringId) { return parseInt(stringId);})
 }
 
-function getUsersFromGTC() {
+function getTranslatorsFromGTC() {
   var jsonLeaderBoardResult = getLeaderBoardAsJSON();
   var leaderboard = jsonLeaderBoardResult["ranking"];
 
@@ -31,15 +31,11 @@ function getUsersFromGTC() {
 
   Logger.log(excludedTranslators.indexOf(71118));
 
-  var translatorsById = {}
-  leaderboard.filter(function (entry) { return entry["languages"].indexOf(language) !== -1; })
-    .filter(function (entry) { return excludedTranslators.indexOf(entry["user_id"]) == -1; })
-    .forEach(function (entry) { translatorsById[entry["user_id"]] = entry; });
-
-  return translatorsById;
+  return leaderboard.filter(function (entry) { return entry["languages"].indexOf(language) !== -1; })
+    .filter(function (entry) { return excludedTranslators.indexOf(entry["user_id"]) == -1; });
 }
 
-function getUsersFromSheet() {
+function getTranslatorsFromSheet() {
   var sheet = getTranslatorsSheet();
   
   var height = sheet.getLastRow() - CONST_TABLE_TRANSLATOR.ROW_START + 1;
@@ -55,15 +51,52 @@ function getUsersFromSheet() {
                                     height,
                                     width);
   
-  var currentUsers = {};
+  var currentTranslators = {};
   
   for (var index=0; index<values.length; index++) {
-    var newUser = {"id"   :values[index][CONST_TABLE_TRANSLATOR.COLUMN_INDEX.ID    - CONST_TABLE_TRANSLATOR.COLUMN_START],
-                   "name" :values[index][CONST_TABLE_TRANSLATOR.COLUMN_INDEX.NAME  - CONST_TABLE_TRANSLATOR.COLUMN_START],
-                   "score":values[index][CONST_TABLE_TRANSLATOR.COLUMN_INDEX.TOTAL - CONST_TABLE_TRANSLATOR.COLUMN_START],
-                   "diff" :0};
-    currentUsers[newUser["id"]] = newUser;
+    var translator = {"id"   :values[index][CONST_TABLE_TRANSLATOR.COLUMN_INDEX.ID    - CONST_TABLE_TRANSLATOR.COLUMN_START],
+                      "name" :values[index][CONST_TABLE_TRANSLATOR.COLUMN_INDEX.NAME  - CONST_TABLE_TRANSLATOR.COLUMN_START],
+                      "score":values[index][CONST_TABLE_TRANSLATOR.COLUMN_INDEX.TOTAL - CONST_TABLE_TRANSLATOR.COLUMN_START],
+                      "diff" :0};
+    currentTranslators[translator["id"]] = translator;
   }
 
-  return currentUsers;
+  return currentTranslators;
+}
+
+function extractNewTranslators(listFreshTranslators, mapOldTranslators) {
+  return listFreshTranslators.filter(function (entry) { return !(entry["user_id"] in mapOldTranslators); });
+}
+
+function addTranslator(user) {
+  var sheet = getTranslatorsSheet();
+  var index = sheet.getLastRow()+1;
+  sheet.appendRow([user["name"],
+                   user["user_id"],
+                   user["score"],
+                   "=SUM(OFFSET($A" + index + ", 0, 5, 1, 7))",
+                   "=SUM(OFFSET($A" + index + ", 0, 5, 1, 30))"]);
+
+  var range = sheet.getRange(index, 1, 1, sheet.getLastColumn());
+  range.setBorder(true, true, true, true, true, true);
+
+  range = sheet.getRange(index, 3, 1, 4);
+  range.setBackground("#efefef");
+}
+
+function updateTranslators() {
+  var mapOldTranslators = getTranslatorsFromSheet();
+  var listFreshTranslators = getTranslatorsFromGTC();
+
+  var newTranslators = extractNewTranslators(listFreshTranslators, mapOldTranslators);
+
+  newTranslators.forEach(function (entry) { addTranslator(entry); } );
+
+  newTranslators.forEach(function (entry) {
+    var translator = {"id"   : entry["user_id"],
+                      "name" : entry["name"],
+                      "score": entry["score"],
+                      "diff" :0};
+    currentTranslators[translator["id"]] = translator;
+  });
 }
