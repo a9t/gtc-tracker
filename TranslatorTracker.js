@@ -59,12 +59,11 @@ function getUsersFromSheet() {
   
   for (var index=0; index<values.length; index++) {
     var newUser = {"id"   :values[index][CONST_TABLE_TRANSLATOR.COLUMN_INDEX.ID    - CONST_TABLE_TRANSLATOR.COLUMN_START],
-                   "rank" :values[index][CONST_TABLE_TRANSLATOR.COLUMN_INDEX.RANK  - CONST_TABLE_TRANSLATOR.COLUMN_START],
                    "name" :values[index][CONST_TABLE_TRANSLATOR.COLUMN_INDEX.NAME  - CONST_TABLE_TRANSLATOR.COLUMN_START],
                    "score":values[index][CONST_TABLE_TRANSLATOR.COLUMN_INDEX.TOTAL - CONST_TABLE_TRANSLATOR.COLUMN_START],
                    "diff" :0};
     currentUsers[newUser["id"]] = newUser;
   }
-  
+
   return currentUsers;
 }
