@@ -75,7 +75,8 @@ function addTranslator(user) {
                    user["user_id"],
                    user["score"],
                    "=SUM(OFFSET($A" + index + ", 0, 5, 1, 7))",
-                   "=SUM(OFFSET($A" + index + ", 0, 5, 1, 30))"]);
+                   "=SUM(OFFSET($A" + index + ", 0, 5, 1, 30))",
+                   user["score"]]);
 
   var range = sheet.getRange(index, 1, 1, sheet.getLastColumn());
   range.setBorder(true, true, true, true, true, true);
@@ -84,19 +85,68 @@ function addTranslator(user) {
   range.setBackground("#efefef");
 }
 
+function insertNewColumnDailyCount() {
+  var sheet = getTranslatorsSheet();
+  sheet.insertColumnBefore(CONST_TABLE_TRANSLATOR.COLUMN_INDEX.UPDATE);
+  sheet.setColumnWidth(CONST_TABLE_TRANSLATOR.COLUMN_INDEX.UPDATE, 80)
+  
+  // insert date at the top
+  var range = sheet.getRange(1, CONST_TABLE_TRANSLATOR.COLUMN_INDEX.UPDATE);
+  range.setValue(getDateAsString());
+  range.setFontWeight("bold");
+  range.setBorder(true, true, true, true, null, null);
+}
+
+function updateExistingTranslators(newUsers) {
+  var sheet = getTranslatorsSheet();
+
+  // last row that has a user
+  var last = sheet.getLastRow();
+  
+  var idRange = sheet.getRange(CONST_TABLE_TRANSLATOR.ROW_START, CONST_TABLE_TRANSLATOR.COLUMN_INDEX.ID, last -1, 1);
+  var totalRange = sheet.getRange(CONST_TABLE_TRANSLATOR.ROW_START, CONST_TABLE_TRANSLATOR.COLUMN_INDEX.TOTAL, last -1, 1);
+  var updateRange = sheet.getRange(CONST_TABLE_TRANSLATOR.ROW_START, CONST_TABLE_TRANSLATOR.COLUMN_INDEX.UPDATE, last -1, 1);
+  
+  var idValues = idRange.getValues();
+  var totalValues = totalRange.getValues();
+  var updateValues = updateRange.getValues();
+  
+  for (var i=0; i<last - 1; i++) {
+    var id = idValues[i];
+    
+    // guaranteed to have entry, already checked in previous function
+    var user = newUsers[id];
+    
+    totalValues[i][0] = user["score"];
+    updateValues[i][0] = user["diff"];
+  }
+  totalRange.setValues(totalValues);
+  updateRange.setValues(updateValues);
+  updateRange.setBorder(true, true, true, true, null, null);
+}
+
 function updateTranslators() {
   var mapOldTranslators = getTranslatorsFromSheet();
   var listFreshTranslators = getTranslatorsFromGTC();
 
   var newTranslators = extractNewTranslators(listFreshTranslators, mapOldTranslators);
 
-  newTranslators.forEach(function (entry) { addTranslator(entry); } );
+  insertNewColumnDailyCount();
+  
+  // update the already present translators
+  listFreshTranslators.forEach(function (entry) {
+    if (entry["user_id"] in mapOldTranslators) {
+      var translator = mapOldTranslators[entry["user_id"]];
 
-  newTranslators.forEach(function (entry) {
-    var translator = {"id"   : entry["user_id"],
-                      "name" : entry["name"],
-                      "score": entry["score"],
-                      "diff" :0};
-    currentTranslators[translator["id"]] = translator;
+      // scores have been known to decrease due to bugs
+      if (entry["score"] >= translator["score"]) {
+        translator["diff"] = entry["score"] - translator["score"];
+        translator["score"] = entry["score"];
+      }
+    }
   });
+  updateExistingTranslators(mapOldTranslators);
+
+  // add the new users to the sheet
+  newTranslators.forEach(function (entry) { addTranslator(entry); } );
 }
