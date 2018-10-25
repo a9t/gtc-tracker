@@ -81,7 +81,7 @@ function addTranslator(user) {
   var range = sheet.getRange(index, 1, 1, sheet.getLastColumn());
   range.setBorder(true, true, true, true, true, true);
 
-  range = sheet.getRange(index, 3, 1, 4);
+  range = sheet.getRange(index, 3, 1, 3);
   range.setBackground("#efefef");
 }
 
@@ -95,6 +95,22 @@ function insertNewColumnDailyCount() {
   range.setValue(getDateAsString());
   range.setFontWeight("bold");
   range.setBorder(true, true, true, true, null, null);
+}
+
+function orderTranslators() {
+  var sheet = getTranslatorsSheet();
+
+  var height = sheet.getLastRow() - CONST_TABLE_TRANSLATOR.ROW_START + 1;
+
+  // no translators yet
+  if (height <= 0) {
+    return {};
+  }
+
+  var width = sheet.getLastColumn() - CONST_TABLE_TRANSLATOR.COLUMN_START + 1;
+
+  var range = sheet.getRange(CONST_TABLE_TRANSLATOR.ROW_START, 1, height, width);
+  range.sort({column: CONST_TABLE_TRANSLATOR.COLUMN_INDEX.TOTAL, ascending: false});
 }
 
 function updateExistingTranslators(newUsers) {
@@ -154,4 +170,6 @@ function updateTranslators() {
 
   // add the new users to the sheet
   newTranslators.forEach(function (entry) { addTranslator(entry); } );
+
+  orderTranslators();
 }
