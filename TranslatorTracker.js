@@ -41,7 +41,7 @@ function getTranslatorsFromSheet() {
   var height = sheet.getLastRow() - CONST_TABLE_TRANSLATOR.ROW_START + 1;
   var width = CONST_TABLE_TRANSLATOR.COLUMN_END - CONST_TABLE_TRANSLATOR.COLUMN_START + 1;
 
-  // only valid for first run
+  // no translators yet
   if (height <= 0) {
     return {};
   }
@@ -103,6 +103,11 @@ function updateExistingTranslators(newUsers) {
   // last row that has a user
   var last = sheet.getLastRow();
   
+  // no translators yet
+  if (last == 1) {
+    return;
+  }
+
   var idRange = sheet.getRange(CONST_TABLE_TRANSLATOR.ROW_START, CONST_TABLE_TRANSLATOR.COLUMN_INDEX.ID, last -1, 1);
   var totalRange = sheet.getRange(CONST_TABLE_TRANSLATOR.ROW_START, CONST_TABLE_TRANSLATOR.COLUMN_INDEX.TOTAL, last -1, 1);
   var updateRange = sheet.getRange(CONST_TABLE_TRANSLATOR.ROW_START, CONST_TABLE_TRANSLATOR.COLUMN_INDEX.UPDATE, last -1, 1);
