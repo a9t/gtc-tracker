@@ -15,6 +15,12 @@ CONST_TABLE_TRANSLATOR = {
   ROW_START: 2,
 }
 
+/**
+ * Retrieve translators that are not really contributing to this language.
+ *
+ * These translators might be the GTC staff or people that are
+ * multilingual and gave up translating in the language.
+ */
 function _getExcludedTranslators() {
   var excludedTranslatorIdAsString = PropertiesService.getScriptProperties().getProperty(PROP_EXCLUDE_TRANSLATOR_IDS);
   var arrayStringIds = excludedTranslatorIdAsString.split(",");
@@ -22,6 +28,9 @@ function _getExcludedTranslators() {
   return arrayStringIds.map(function (stringId) { return parseInt(stringId);})
 }
 
+/**
+ * Retrieve a filtered list of translators that contribute to the language.
+ */
 function getTranslatorsFromGTC() {
   var jsonLeaderBoardResult = getLeaderBoardAsJSON();
   var leaderboard = jsonLeaderBoardResult["ranking"];
@@ -29,12 +38,17 @@ function getTranslatorsFromGTC() {
   var language = PropertiesService.getScriptProperties().getProperty(PROP_LANGUAGE_COMMUNITY);
   var excludedTranslators = _getExcludedTranslators();
 
-  Logger.log(excludedTranslators.indexOf(71118));
-
   return leaderboard.filter(function (entry) { return entry["languages"].indexOf(language) !== -1; })
     .filter(function (entry) { return excludedTranslators.indexOf(entry["user_id"]) == -1; });
 }
 
+/**
+ * Retrieve existing translators from the sheet as a map.
+ *
+ * The keys are the translator ids, and each translator entry
+ * stores the id, name, score and the word count difference,
+ * set to 0.
+ */
 function getTranslatorsFromSheet() {
   var sheet = getTranslatorsSheet();
   
@@ -64,17 +78,26 @@ function getTranslatorsFromSheet() {
   return currentTranslators;
 }
 
+/**
+ * Retrieve a list of the translators that show up in the leaderboard,
+ * but not in the sheet.
+ */
 function extractNewTranslators(listFreshTranslators, mapOldTranslators) {
   return listFreshTranslators.filter(function (entry) { return !(entry["user_id"] in mapOldTranslators); });
 }
 
+/**
+ * Add one new translator to the sheet.
+ */
 function addTranslator(user) {
   var sheet = getTranslatorsSheet();
   var index = sheet.getLastRow()+1;
   sheet.appendRow([user["name"],
                    user["user_id"],
                    user["score"],
+                   // sum up the weekly contributions
                    "=SUM(OFFSET($A" + index + ", 0, 5, 1, 7))",
+                   // sum up the monthly contributions
                    "=SUM(OFFSET($A" + index + ", 0, 5, 1, 30))",
                    user["score"]]);
 
@@ -85,6 +108,10 @@ function addTranslator(user) {
   range.setBackground("#efefef");
 }
 
+/**
+ * Add a new column that will store the word contributions
+ * for the current day (latest GTC update versus previous one).
+ */
 function insertNewColumnDailyCount() {
   var sheet = getTranslatorsSheet();
   sheet.insertColumnBefore(CONST_TABLE_TRANSLATOR.COLUMN_INDEX.UPDATE);
@@ -97,6 +124,9 @@ function insertNewColumnDailyCount() {
   range.setBorder(true, true, true, true, null, null);
 }
 
+/**
+ * Order translators by their total word count
+ */
 function orderTranslators() {
   var sheet = getTranslatorsSheet();
 
@@ -113,6 +143,10 @@ function orderTranslators() {
   range.sort({column: CONST_TABLE_TRANSLATOR.COLUMN_INDEX.TOTAL, ascending: false});
 }
 
+/**
+ * Update the contributions of the translators that had
+ * contributions in the previous days.
+ */
 function updateExistingTranslators(newUsers) {
   var sheet = getTranslatorsSheet();
 
@@ -146,6 +180,9 @@ function updateExistingTranslators(newUsers) {
   updateRange.setBorder(true, true, true, true, null, null);
 }
 
+/**
+ * Update the spreadsheet with the latest contributions.
+ */
 function updateTranslators() {
   var mapOldTranslators = getTranslatorsFromSheet();
   var listFreshTranslators = getTranslatorsFromGTC();

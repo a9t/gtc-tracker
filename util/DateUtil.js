@@ -1,3 +1,7 @@
+/*
+ * Support functionality for date generation.
+ */
+
 var MONTHS_STRINGS = {
    "1" : "JAN",
    "2" : "FEB",
