@@ -1,5 +1,5 @@
 /*
- * Utility class to run quick tests to debug issues that may be
+ * Utility file to run quick tests to debug issues that may be
  * determined by API changes.
  */ 
 
