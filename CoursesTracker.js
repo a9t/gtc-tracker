@@ -1,0 +1,11 @@
+CONST_TABLE_COURSE = {
+  COLUMN_START: 1,
+  COLUMN_END: 4,
+  COLUMN_INDEX: {
+    NAME:    1,
+    GTC_ID:  2,
+    TOTAL:   3,
+    UPDATE:  4
+  },
+  ROW_START: 2,
+}
